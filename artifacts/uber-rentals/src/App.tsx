@@ -14,7 +14,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <LoadingScreen onComplete={() => setLoaded(true)} />
-        {loaded && <VehicleExperiencePage />}
+        {loaded && <VehicleExperiencePage modelUrl="/car-model.glb" />}
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

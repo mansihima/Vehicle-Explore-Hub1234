@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, useGLTF, Html } from "@react-three/drei";
 import { CanvasErrorBoundary } from "./CanvasErrorBoundary";
@@ -94,27 +94,53 @@ function GLBModel({ url, showHotspots }: { url: string; showHotspots: boolean })
   const groupRef = useRef<THREE.Group>(null);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
 
+  // Compute auto-scale + centering offset once when scene loads
+  const { scaleFactor, offset, hotspotPositions } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const sf = maxDim > 0 ? 2.8 / maxDim : 1;
+    // offset to center model at origin (applied at the primitive level, before scale)
+    const off = new THREE.Vector3(-center.x, -center.y + size.y * 0.0, -center.z);
+    // hotspot positions in scaled space
+    const hp: [number, number, number][] = [
+      [size.x * 0.3 * sf,   size.y * 0.55 * sf,  size.z * 0.45 * sf],
+      [-size.x * 0.5 * sf,  size.y * 0.2 * sf,   size.z * 0.3 * sf],
+      [size.x * 0.35 * sf,  -size.y * 0.05 * sf,  size.z * 0.5 * sf],
+      [-size.x * 0.25 * sf, size.y * 0.1 * sf,  -size.z * 0.45 * sf],
+      [0,                    size.y * 0.65 * sf,  -size.z * 0.25 * sf],
+    ];
+    return { scaleFactor: sf, offset: off, hotspotPositions: hp };
+  }, [scene]);
+
+  // Boost environment reflections once
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.envMapIntensity = 1.4;
+          mat.needsUpdate = true;
+        }
+      }
+    });
+  }, [scene]);
+
   useFrame((state) => {
     if (groupRef.current) {
       groupRef.current.rotation.y = state.clock.elapsedTime * 0.25;
     }
   });
 
-  scene.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh) {
-      const mesh = child as THREE.Mesh;
-      if (mesh.material) {
-        const mat = mesh.material as THREE.MeshStandardMaterial;
-        mat.envMapIntensity = 1.2;
-      }
-    }
-  });
-
   return (
-    <group ref={groupRef}>
-      <primitive object={scene} scale={1} />
-      {showHotspots && HOTSPOTS.map((spot) => (
-        <Html key={spot.id} position={spot.position} center>
+    <group ref={groupRef} scale={scaleFactor}>
+      <primitive object={scene} position={offset} />
+      {showHotspots && HOTSPOTS.map((spot, i) => (
+        <Html key={spot.id} position={hotspotPositions[i]} center>
           <div
             className="relative cursor-pointer"
             onClick={() => setActiveHotspot(activeHotspot === spot.id ? null : spot.id)}
