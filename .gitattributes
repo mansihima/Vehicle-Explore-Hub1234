@@ -1,0 +1,2 @@
+artifacts/uber-rentals/public/car-model.glb filter=lfs diff=lfs merge=lfs -text
+attached_assets/8c2811247aeb128e8e70d82308ec8358_1774830618610.glb filter=lfs diff=lfs merge=lfs -text
