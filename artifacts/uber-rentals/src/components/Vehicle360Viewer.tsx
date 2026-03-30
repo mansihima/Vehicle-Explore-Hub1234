@@ -1,19 +1,63 @@
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, Html, Stars } from "@react-three/drei";
+import { OrbitControls, Environment, Html, Stars, useGLTF } from "@react-three/drei";
 import { CanvasErrorBoundary } from "./CanvasErrorBoundary";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import * as THREE from "three";
 
 const SECTIONS = [
-  { id: "front", label: "Front View", angle: 0, color: "#fbbf24" },
-  { id: "side", label: "Side Profile", angle: Math.PI / 2, color: "#60a5fa" },
-  { id: "rear", label: "Rear View", angle: Math.PI, color: "#a78bfa" },
-  { id: "top", label: "Top View", angle: 0, color: "#34d399" },
-  { id: "interior", label: "Interior", angle: Math.PI / 4, color: "#f87171" },
+  { id: "front",    label: "Front View",    angle: 0,              color: "#fbbf24" },
+  { id: "side",     label: "Side Profile",  angle: Math.PI / 2,    color: "#60a5fa" },
+  { id: "rear",     label: "Rear View",     angle: Math.PI,        color: "#a78bfa" },
+  { id: "quarter",  label: "3/4 Rear",      angle: (Math.PI * 3) / 4, color: "#34d399" },
+  { id: "interior", label: "Interior",      angle: Math.PI / 4,    color: "#f87171" },
 ];
 
-function Car360({ targetAngle }: { targetAngle: number }) {
+/* ---------- GLB version ---------- */
+function GLBCar360({ url, targetAngle }: { url: string; targetAngle: number }) {
+  const { scene } = useGLTF(url);
+  const groupRef = useRef<THREE.Group>(null);
+
+  const { scaleFactor, offset } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const sf = maxDim > 0 ? 2.8 / maxDim : 1;
+    const off = new THREE.Vector3(-center.x, -center.y, -center.z);
+    return { scaleFactor: sf, offset: off };
+  }, [scene]);
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat) { mat.envMapIntensity = 1.4; mat.needsUpdate = true; }
+      }
+    });
+  }, [scene]);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y,
+        targetAngle,
+        0.05
+      );
+    }
+  });
+
+  return (
+    <group ref={groupRef} scale={scaleFactor}>
+      <primitive object={scene} position={offset} />
+    </group>
+  );
+}
+
+/* ---------- CSS placeholder fallback ---------- */
+function PlaceholderCar360({ targetAngle }: { targetAngle: number }) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
@@ -28,50 +72,29 @@ function Car360({ targetAngle }: { targetAngle: number }) {
 
   return (
     <group ref={groupRef}>
-      {/* Car body */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[2.2, 0.6, 1]} />
         <meshStandardMaterial color="#161626" metalness={0.95} roughness={0.05} />
       </mesh>
-
-      {/* Roof */}
       <mesh position={[0, 0.55, 0]} castShadow>
         <boxGeometry args={[1.4, 0.45, 0.9]} />
         <meshStandardMaterial color="#0f0f1f" metalness={0.9} roughness={0.1} />
       </mesh>
-
-      {/* Wheels */}
-      {[[-0.8, -0.35, 0.55], [0.8, -0.35, 0.55], [-0.8, -0.35, -0.55], [0.8, -0.35, -0.55]].map((pos, i) => (
-        <mesh key={i} position={pos as [number, number, number]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.28, 0.28, 0.2, 24]} />
+      {([[-0.8,-0.35,0.55],[0.8,-0.35,0.55],[-0.8,-0.35,-0.55],[0.8,-0.35,-0.55]] as [number,number,number][]).map((pos, i) => (
+        <mesh key={i} position={pos} rotation={[Math.PI/2,0,0]}>
+          <cylinderGeometry args={[0.28,0.28,0.2,24]} />
           <meshStandardMaterial color="#0a0a0a" metalness={0.2} roughness={0.9} />
         </mesh>
       ))}
-
-      {/* Rim detail */}
-      {[[-0.8, -0.35, 0.55], [0.8, -0.35, 0.55], [-0.8, -0.35, -0.55], [0.8, -0.35, -0.55]].map((pos, i) => (
-        <mesh key={`rim-${i}`} position={pos as [number, number, number]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.16, 0.16, 0.22, 12]} />
-          <meshStandardMaterial color="#888" metalness={1} roughness={0.1} />
-        </mesh>
-      ))}
-
-      {/* Windshield glow */}
-      <mesh position={[0.35, 0.45, 0]}>
-        <boxGeometry args={[0.6, 0.4, 0.88]} />
-        <meshStandardMaterial color="#1a3a6a" transparent opacity={0.4} metalness={0.3} roughness={0} />
-      </mesh>
-
-      {/* Headlights */}
-      <pointLight position={[1.2, 0.1, 0.4]} color="#ffffff" intensity={3} distance={4} />
-      <pointLight position={[1.2, 0.1, -0.4]} color="#ffffff" intensity={3} distance={4} />
-      {/* Tail lights */}
-      <pointLight position={[-1.2, 0.1, 0.4]} color="#ff2200" intensity={2} distance={3} />
-      <pointLight position={[-1.2, 0.1, -0.4]} color="#ff2200" intensity={2} distance={3} />
+      <pointLight position={[1.2,0.1,0.4]}  color="#ffffff" intensity={3} distance={4} />
+      <pointLight position={[1.2,0.1,-0.4]} color="#ffffff" intensity={3} distance={4} />
+      <pointLight position={[-1.2,0.1,0.4]} color="#ff2200" intensity={2} distance={3} />
+      <pointLight position={[-1.2,0.1,-0.4]} color="#ff2200" intensity={2} distance={3} />
     </group>
   );
 }
 
+/* ---------- Main component ---------- */
 interface Vehicle360ViewerProps {
   modelUrl?: string;
   onClose?: () => void;
@@ -110,46 +133,45 @@ export default function Vehicle360Viewer({ modelUrl, onClose }: Vehicle360Viewer
       {/* 3D Canvas */}
       <div className="flex-1">
         <CanvasErrorBoundary>
-        <Canvas
-          camera={{ position: [4, 2, 4], fov: 50 }}
-          shadows
-          dpr={[1, 2]}
-        >
-          <Stars radius={80} depth={30} count={3000} factor={3} saturation={0} fade />
+          <Canvas camera={{ position: [4, 2, 4], fov: 50 }} shadows dpr={[1, 2]}>
+            <Stars radius={80} depth={30} count={3000} factor={3} saturation={0} fade />
 
-          <ambientLight intensity={0.15} />
-          <directionalLight position={[5, 8, 5]} intensity={2} castShadow color="#fffaee" />
-          <directionalLight position={[-5, 4, -5]} intensity={0.8} color="#4466ff" />
-          <pointLight position={[0, 5, 0]} intensity={1} color="#fbbf24" distance={12} />
+            <ambientLight intensity={0.15} />
+            <directionalLight position={[5, 8, 5]}   intensity={2}   castShadow color="#fffaee" />
+            <directionalLight position={[-5, 4, -5]}  intensity={0.8}           color="#4466ff" />
+            <pointLight       position={[0, 5, 0]}    intensity={1}  color="#fbbf24" distance={12} />
 
-          <Environment preset="night" />
+            <Environment preset="night" />
 
-          {/* Ground */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]} receiveShadow>
-            <planeGeometry args={[30, 30]} />
-            <meshStandardMaterial color="#04040c" metalness={0.95} roughness={0.1} />
-          </mesh>
+            {/* Ground plane */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]} receiveShadow>
+              <planeGeometry args={[30, 30]} />
+              <meshStandardMaterial color="#04040c" metalness={0.95} roughness={0.1} />
+            </mesh>
 
-          {/* Ground circle */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.74, 0]}>
-            <ringGeometry args={[1.6, 1.65, 64]} />
-            <meshStandardMaterial color="#fbbf24" transparent opacity={0.3} />
-          </mesh>
+            {/* Ground ring */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.74, 0]}>
+              <ringGeometry args={[1.6, 1.65, 64]} />
+              <meshStandardMaterial color="#fbbf24" transparent opacity={0.3} />
+            </mesh>
 
-          <Suspense fallback={<Html center><div className="text-white/50 text-sm">Loading...</div></Html>}>
-            <Car360 targetAngle={cameraTarget} />
-          </Suspense>
+            <Suspense fallback={<Html center><div className="text-white/50 text-sm">Loading model…</div></Html>}>
+              {modelUrl
+                ? <GLBCar360 url={modelUrl} targetAngle={cameraTarget} />
+                : <PlaceholderCar360 targetAngle={cameraTarget} />
+              }
+            </Suspense>
 
-          <OrbitControls
-            enableZoom
-            enablePan={false}
-            minDistance={3}
-            maxDistance={9}
-            minPolarAngle={Math.PI / 8}
-            maxPolarAngle={Math.PI / 1.9}
-            autoRotate={false}
-          />
-        </Canvas>
+            <OrbitControls
+              enableZoom
+              enablePan={false}
+              minDistance={3}
+              maxDistance={9}
+              minPolarAngle={Math.PI / 8}
+              maxPolarAngle={Math.PI / 1.9}
+              autoRotate={false}
+            />
+          </Canvas>
         </CanvasErrorBoundary>
       </div>
 
@@ -171,11 +193,7 @@ export default function Vehicle360Viewer({ modelUrl, onClose }: Vehicle360Viewer
                     ? "text-black"
                     : "glass text-white/60 hover:text-white"
                 }`}
-                style={
-                  activeSection === section.id
-                    ? { background: section.color }
-                    : {}
-                }
+                style={activeSection === section.id ? { background: section.color } : {}}
               >
                 {section.label}
               </motion.button>
