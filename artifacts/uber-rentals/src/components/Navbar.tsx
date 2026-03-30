@@ -39,7 +39,7 @@ export default function Navbar({ onBookNow }: NavbarProps) {
 
         {/* Nav links */}
         <div className="hidden md:flex items-center gap-8">
-          {["Experience", "Fleet", "Performance", "Booking"].map((item) => (
+          {["Experience", "Interior", "Fleet", "Performance", "Booking"].map((item) => (
             <a
               key={item}
               href={`#${item.toLowerCase()}`}

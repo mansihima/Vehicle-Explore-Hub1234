@@ -8,6 +8,7 @@ import Vehicle360Viewer from "../components/Vehicle360Viewer";
 import RidePersonality from "../components/RidePersonality";
 import BookingPanel from "../components/BookingPanel";
 import ScrollExperience from "../components/ScrollExperience";
+import InteriorExperience from "../components/InteriorExperience";
 import Watermark from "../components/Watermark";
 
 interface VehicleExperiencePageProps {
@@ -49,10 +50,13 @@ export default function VehicleExperiencePage({ modelUrl }: VehicleExperiencePag
           <ModelViewerSection modelUrl={modelUrl} />
         </div>
 
-        {/* 3. Scroll stats & features */}
+        {/* 3. Interior 360° embed */}
+        <InteriorExperience />
+
+        {/* 4. Scroll stats & features */}
         <ScrollExperience />
 
-        {/* 4. Vehicle Discovery */}
+        {/* 5. Vehicle Discovery */}
         <VehicleDiscovery onSelectVehicle={scrollToModel} />
 
         {/* 5. Ride Personality */}
