@@ -26,7 +26,8 @@ function GLBCar360({ url, targetAngle }: { url: string; targetAngle: number }) {
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
     const sf = maxDim > 0 ? 2.8 / maxDim : 1;
-    const off = new THREE.Vector3(-center.x, -center.y, -center.z);
+    // X/Z: center horizontally; Y: lift so bottom sits at y=0
+    const off = new THREE.Vector3(-center.x, -box.min.y, -center.z);
     return { scaleFactor: sf, offset: off };
   }, [scene]);
 
@@ -143,14 +144,14 @@ export default function Vehicle360Viewer({ modelUrl, onClose }: Vehicle360Viewer
 
             <Environment preset="night" />
 
-            {/* Ground plane */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]} receiveShadow>
+            {/* Ground plane — sits at y=0 to match car bottom */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
               <planeGeometry args={[30, 30]} />
               <meshStandardMaterial color="#04040c" metalness={0.95} roughness={0.1} />
             </mesh>
 
             {/* Ground ring */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.74, 0]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
               <ringGeometry args={[1.6, 1.65, 64]} />
               <meshStandardMaterial color="#fbbf24" transparent opacity={0.3} />
             </mesh>
