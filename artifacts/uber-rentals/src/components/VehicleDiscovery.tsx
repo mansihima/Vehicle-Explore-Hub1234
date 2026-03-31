@@ -27,6 +27,7 @@ const SPORT_VEHICLES = [
     features: ["M xDrive AWD", "Adaptive M suspension", "Carbon fibre trim", "M Sport exhaust"],
     color: "#60a5fa",
     modelUrl: "/car-sport-2.glb",
+    scaleMultiplier: 1.45,
   },
   {
     id: "sport-3",
@@ -45,9 +46,11 @@ const SPORT_VEHICLES = [
 function RotatingGLBModel({
   url,
   isHovered,
+  scaleMultiplier = 1,
 }: {
   url: string;
   isHovered: boolean;
+  scaleMultiplier?: number;
 }) {
   const { scene } = useGLTF(url);
   const groupRef = useRef<THREE.Group>(null);
@@ -59,10 +62,10 @@ function RotatingGLBModel({
     box.getCenter(center);
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
-    const sf = maxDim > 0 ? 2.4 / maxDim : 1;
+    const sf = maxDim > 0 ? (2.4 / maxDim) * scaleMultiplier : scaleMultiplier;
     const off = new THREE.Vector3(-center.x, -box.min.y, -center.z);
     return { scaleFactor: sf, offset: off };
-  }, [scene]);
+  }, [scene, scaleMultiplier]);
 
   useFrame((state) => {
     if (groupRef.current && !isHovered) {
@@ -137,7 +140,7 @@ function SportCarCard({
                 </Html>
               }
             >
-              <RotatingGLBModel url={vehicle.modelUrl} isHovered={hovered} />
+              <RotatingGLBModel url={vehicle.modelUrl} isHovered={hovered} scaleMultiplier={vehicle.scaleMultiplier ?? 1} />
             </Suspense>
 
             {hovered && (
