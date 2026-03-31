@@ -4,12 +4,12 @@ import { useState } from "react";
 const VEHICLES = [
   {
     id: "model-s",
-    name: "Apex GT",
-    category: "Sports",
-    tagline: "Born for the track. Built for the road.",
+    name: "BMW 5 Series Sedan",
+    category: "Luxury Sedan",
+    tagline: "Refined power. Effortless elegance.",
     price: 299,
-    specs: { power: "450 HP", top_speed: "180 mph", acceleration: "3.2s", range: "380 mi" },
-    features: ["Carbon fiber trim", "Sport suspension", "Launch control", "Track mode"],
+    specs: { power: "523 HP", top_speed: "155 mph", acceleration: "3.8s", range: "420 mi" },
+    features: ["Nappa leather interior", "Panoramic sunroof", "Adaptive M suspension", "Harman Kardon audio"],
     color: "#fbbf24",
   },
   {
