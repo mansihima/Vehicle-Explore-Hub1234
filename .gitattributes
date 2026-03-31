@@ -1,2 +1,8 @@
 artifacts/uber-rentals/public/car-model.glb filter=lfs diff=lfs merge=lfs -text
 attached_assets/8c2811247aeb128e8e70d82308ec8358_1774830618610.glb filter=lfs diff=lfs merge=lfs -text
+artifacts/uber-rentals/public/car-sport-1.glb filter=lfs diff=lfs merge=lfs -text
+artifacts/uber-rentals/public/car-sport-2.glb filter=lfs diff=lfs merge=lfs -text
+artifacts/uber-rentals/public/car-sport-3.glb filter=lfs diff=lfs merge=lfs -text
+attached_assets/74e5b73fc379c07abdc3517319578895_1774930840847.glb filter=lfs diff=lfs merge=lfs -text
+attached_assets/88247fed02fee7366177cad1b479808a_1774930832575.glb filter=lfs diff=lfs merge=lfs -text
+attached_assets/904255d8673f72c15ecf4e35a95618c9_1774930836709.glb filter=lfs diff=lfs merge=lfs -text

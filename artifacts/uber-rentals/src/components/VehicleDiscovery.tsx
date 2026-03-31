@@ -1,58 +1,255 @@
+import { Suspense, useRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF, OrbitControls, Environment, Html } from "@react-three/drei";
+import { CanvasErrorBoundary } from "./CanvasErrorBoundary";
+import * as THREE from "three";
 
-const VEHICLES = [
+const SPORT_VEHICLES = [
   {
-    id: "model-s",
-    name: "BMW 5 Series Sedan",
-    category: "Luxury Sedan",
-    tagline: "Refined power. Effortless elegance.",
-    price: 299,
-    specs: { power: "523 HP", top_speed: "155 mph", acceleration: "3.8s", range: "420 mi" },
-    features: ["Nappa leather interior", "Panoramic sunroof", "Adaptive M suspension", "Harman Kardon audio"],
+    id: "sport-1",
+    name: "Porsche 911 Carrera S",
+    category: "Sports Coupe",
+    tagline: "Iconic performance, engineered for the thrill.",
+    price: 499,
+    specs: { power: "450 HP", top_speed: "191 mph", acceleration: "3.5s", range: "370 mi" },
+    features: ["Sport Chrono Package", "PASM suspension", "Launch control", "Carbon ceramic brakes"],
     color: "#fbbf24",
+    modelUrl: "/car-sport-1.glb",
   },
   {
-    id: "model-x",
-    name: "Executive S",
-    category: "Luxury",
-    tagline: "Where refinement meets ambition.",
-    price: 199,
-    specs: { power: "320 HP", top_speed: "155 mph", acceleration: "5.1s", range: "450 mi" },
-    features: ["Nappa leather", "Panoramic roof", "Massaging seats", "Bose sound"],
+    id: "sport-2",
+    name: "BMW M4 Competition",
+    category: "Performance Coupe",
+    tagline: "Track-bred. Road-ready. Uncompromising.",
+    price: 399,
+    specs: { power: "503 HP", top_speed: "180 mph", acceleration: "3.9s", range: "350 mi" },
+    features: ["M xDrive AWD", "Adaptive M suspension", "Carbon fibre trim", "M Sport exhaust"],
     color: "#60a5fa",
+    modelUrl: "/car-sport-2.glb",
   },
   {
-    id: "model-3",
-    name: "Urban Pro",
-    category: "Performance",
-    tagline: "Precision in every corner.",
-    price: 149,
-    specs: { power: "280 HP", top_speed: "145 mph", acceleration: "4.8s", range: "310 mi" },
-    features: ["AWD", "Adaptive cruise", "Sport mode", "360 cam"],
+    id: "sport-3",
+    name: "Mercedes AMG GT",
+    category: "Super Coupe",
+    tagline: "Pure driving emotion. Nothing held back.",
+    price: 599,
+    specs: { power: "577 HP", top_speed: "197 mph", acceleration: "3.1s", range: "320 mi" },
+    features: ["AMG SPEEDSHIFT DCT", "Active rear steering", "Burmester audio", "Carbon bonnet"],
     color: "#a78bfa",
+    modelUrl: "/car-sport-3.glb",
   },
 ];
 
+/* ── Rotating GLB Model ─────────────────────────────────── */
+function RotatingGLBModel({
+  url,
+  isHovered,
+}: {
+  url: string;
+  isHovered: boolean;
+}) {
+  const { scene } = useGLTF(url);
+  const groupRef = useRef<THREE.Group>(null);
+
+  const { scaleFactor, offset } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const sf = maxDim > 0 ? 2.4 / maxDim : 1;
+    const off = new THREE.Vector3(-center.x, -box.min.y, -center.z);
+    return { scaleFactor: sf, offset: off };
+  }, [scene]);
+
+  useFrame((state) => {
+    if (groupRef.current && !isHovered) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.4;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <group scale={scaleFactor} position={[0, -1, 0]}>
+        <primitive object={scene} position={offset} />
+      </group>
+    </group>
+  );
+}
+
+/* ── Single Car Card ────────────────────────────────────── */
+function SportCarCard({
+  vehicle,
+  onBook,
+}: {
+  vehicle: (typeof SPORT_VEHICLES)[0];
+  onBook: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.7 }}
+      whileHover={{ y: -6 }}
+      className="flex flex-col rounded-3xl overflow-hidden"
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: `1px solid ${vehicle.color}20`,
+        boxShadow: hovered
+          ? `0 0 60px ${vehicle.color}15, 0 20px 60px rgba(0,0,0,0.5)`
+          : "0 8px 40px rgba(0,0,0,0.4)",
+        transition: "box-shadow 0.4s ease",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* 3D Canvas */}
+      <div className="relative" style={{ height: 260, background: `radial-gradient(ellipse at 50% 60%, ${vehicle.color}08, transparent 70%), #050508` }}>
+        <CanvasErrorBoundary>
+          <Canvas
+            camera={{ position: [0, 1.4, 4.5], fov: 42 }}
+            shadows
+            gl={{ antialias: true, alpha: true }}
+            style={{ background: "transparent" }}
+          >
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[4, 6, 4]} intensity={1.4} castShadow />
+            <pointLight position={[0, 4, 0]} intensity={0.8} color={vehicle.color} distance={10} />
+            <Environment preset="night" />
+
+            <Suspense
+              fallback={
+                <Html center>
+                  <div className="text-white/40 text-xs">Loading…</div>
+                </Html>
+              }
+            >
+              <RotatingGLBModel url={vehicle.modelUrl} isHovered={hovered} />
+            </Suspense>
+
+            {hovered && (
+              <OrbitControls
+                enableZoom={false}
+                enablePan={false}
+                minPolarAngle={Math.PI / 4}
+                maxPolarAngle={Math.PI / 1.8}
+              />
+            )}
+          </Canvas>
+        </CanvasErrorBoundary>
+
+        {/* Hover label */}
+        <div
+          className="absolute bottom-3 right-3 flex items-center gap-1.5 transition-opacity duration-300"
+          style={{ opacity: hovered ? 1 : 0 }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full" style={{ background: vehicle.color }} />
+          <span className="text-white/50 text-[10px] tracking-wide">Drag to rotate</span>
+        </div>
+
+        {/* Category badge */}
+        <div
+          className="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] tracking-widest uppercase font-medium"
+          style={{ background: `${vehicle.color}18`, color: vehicle.color, border: `1px solid ${vehicle.color}30` }}
+        >
+          {vehicle.category}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-6 flex flex-col gap-4 flex-1">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-white font-bold text-xl leading-tight">{vehicle.name}</h3>
+            <p className="text-white/40 text-xs mt-1">{vehicle.tagline}</p>
+          </div>
+          <div className="text-right flex-shrink-0 ml-4">
+            <span className="font-bold text-2xl" style={{ color: vehicle.color }}>
+              ${vehicle.price}
+            </span>
+            <span className="text-white/30 text-xs block">/day</span>
+          </div>
+        </div>
+
+        {/* Specs */}
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(vehicle.specs).map(([key, val]) => (
+            <div key={key} className="glass rounded-xl px-3 py-2">
+              <p className="text-white/30 text-[10px] uppercase tracking-wide mb-0.5">
+                {key.replace("_", " ")}
+              </p>
+              <p className="text-white font-semibold text-sm">{val}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Features */}
+        <div className="flex flex-wrap gap-1.5">
+          {vehicle.features.map((feat) => (
+            <span
+              key={feat}
+              className="text-[10px] px-2.5 py-1 rounded-full"
+              style={{
+                background: `${vehicle.color}12`,
+                color: vehicle.color,
+                border: `1px solid ${vehicle.color}25`,
+              }}
+            >
+              {feat}
+            </span>
+          ))}
+        </div>
+
+        {/* Book button */}
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onBook}
+          className="w-full py-3.5 rounded-2xl font-semibold text-sm tracking-wide mt-auto"
+          style={{
+            background: hovered
+              ? `linear-gradient(135deg, ${vehicle.color}, ${vehicle.color}cc)`
+              : "rgba(255,255,255,0.06)",
+            color: hovered ? "#000" : vehicle.color,
+            border: `1px solid ${vehicle.color}30`,
+            transition: "all 0.3s ease",
+          }}
+        >
+          Reserve Now →
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Section ─────────────────────────────────────────────── */
 interface VehicleDiscoveryProps {
   onSelectVehicle: (vehicleId: string) => void;
 }
 
 export default function VehicleDiscovery({ onSelectVehicle }: VehicleDiscoveryProps) {
-  const [selected, setSelected] = useState(VEHICLES[0].id);
-  const selectedVehicle = VEHICLES.find((v) => v.id === selected)!;
-
   return (
-    <section id="fleet" className="relative py-32 px-6">
-      {/* Section background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-0 left-0 right-0 h-px opacity-20"
-          style={{ background: "linear-gradient(90deg, transparent, #fbbf24, transparent)" }}
-        />
-      </div>
+    <section className="relative py-32 px-6">
+      {/* Top divider */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-20"
+        style={{ background: "linear-gradient(90deg, transparent, #fbbf24, transparent)" }}
+      />
 
-      <div className="max-w-7xl mx-auto">
+      {/* Background glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at 50% 0%, rgba(251,191,36,0.04) 0%, transparent 60%)",
+        }}
+      />
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -62,140 +259,26 @@ export default function VehicleDiscovery({ onSelectVehicle }: VehicleDiscoveryPr
           className="text-center mb-16"
         >
           <span className="text-amber-400 text-xs tracking-[0.3em] uppercase font-medium">
-            Fleet Selection
+            Curated Fleet
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-white mt-3 mb-4">
-            Choose Your Experience
+            Luxury Sports Collection
           </h2>
           <p className="text-white/40 max-w-xl mx-auto">
-            Each vehicle is curated for a distinct personality. Find yours.
+            Hover to interact. Drag to explore. Three exceptional machines, one unforgettable experience.
           </p>
         </motion.div>
 
-        {/* Vehicle selector tabs */}
-        <div className="flex items-center justify-center gap-3 mb-12 flex-wrap">
-          {VEHICLES.map((vehicle) => (
-            <motion.button
+        {/* Car cards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {SPORT_VEHICLES.map((vehicle) => (
+            <SportCarCard
               key={vehicle.id}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setSelected(vehicle.id)}
-              className={`px-6 py-3 rounded-2xl text-sm font-medium tracking-wide transition-all duration-300 ${
-                selected === vehicle.id
-                  ? "text-black glow-gold"
-                  : "glass text-white/60 hover:text-white"
-              }`}
-              style={selected === vehicle.id ? { background: vehicle.color } : {}}
-            >
-              {vehicle.name}
-              <span className="ml-2 text-xs opacity-60">{vehicle.category}</span>
-            </motion.button>
+              vehicle={vehicle}
+              onBook={() => onSelectVehicle(vehicle.id)}
+            />
           ))}
         </div>
-
-        {/* Selected vehicle detail */}
-        <motion.div
-          key={selected}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center"
-        >
-          {/* Left: Info */}
-          <div>
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className="text-3xl font-bold text-white">{selectedVehicle.name}</h3>
-                <p className="text-white/50 mt-1">{selectedVehicle.tagline}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-amber-400 text-3xl font-bold">${selectedVehicle.price}</span>
-                <span className="text-white/40 text-sm">/day</span>
-              </div>
-            </div>
-
-            {/* Specs grid */}
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              {Object.entries(selectedVehicle.specs).map(([key, val]) => (
-                <div key={key} className="glass rounded-xl p-4">
-                  <p className="text-white/40 text-xs uppercase tracking-wide mb-1">
-                    {key.replace("_", " ")}
-                  </p>
-                  <p className="text-white font-semibold text-lg">{val}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Features */}
-            <div className="mb-8">
-              <p className="text-white/40 text-xs uppercase tracking-wide mb-3">Highlights</p>
-              <div className="flex flex-wrap gap-2">
-                {selectedVehicle.features.map((feat) => (
-                  <span
-                    key={feat}
-                    className="glass-gold text-amber-300 text-xs px-3 py-1.5 rounded-full"
-                  >
-                    {feat}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* CTA */}
-            <button
-              onClick={() => onSelectVehicle(selected)}
-              className="w-full py-4 rounded-2xl font-semibold text-black text-sm tracking-wide transition-all duration-300 hover:opacity-90"
-              style={{ background: `linear-gradient(135deg, ${selectedVehicle.color}, ${selectedVehicle.color}cc)` }}
-            >
-              View 3D Model →
-            </button>
-          </div>
-
-          {/* Right: Visual card */}
-          <motion.div
-            className="glass rounded-3xl p-8 flex flex-col items-center justify-center min-h-[320px]"
-            style={{
-              background: `radial-gradient(ellipse at 50% 30%, ${selectedVehicle.color}10 0%, transparent 70%), rgba(255,255,255,0.03)`,
-              border: `1px solid ${selectedVehicle.color}20`,
-            }}
-          >
-            {/* Placeholder car silhouette */}
-            <div className="relative w-full flex items-center justify-center">
-              {/* Car body shape */}
-              <div className="relative">
-                <div
-                  className="w-64 h-20 rounded-xl"
-                  style={{ background: `linear-gradient(135deg, ${selectedVehicle.color}30, ${selectedVehicle.color}10)`, border: `1px solid ${selectedVehicle.color}20` }}
-                />
-                <div
-                  className="absolute top-[-30px] left-12 w-40 h-16 rounded-t-2xl rounded-b-none"
-                  style={{ background: `linear-gradient(135deg, ${selectedVehicle.color}25, transparent)`, border: `1px solid ${selectedVehicle.color}15`, borderBottom: "none" }}
-                />
-                {/* Wheels */}
-                {[{ left: "20px" }, { right: "20px" }].map((style, i) => (
-                  <div
-                    key={i}
-                    className="absolute bottom-[-14px] w-11 h-11 rounded-full"
-                    style={{
-                      ...style,
-                      background: `radial-gradient(circle, #333 40%, ${selectedVehicle.color}40 100%)`,
-                      border: `2px solid ${selectedVehicle.color}40`,
-                    }}
-                  />
-                ))}
-                {/* Glow */}
-                <div
-                  className="absolute inset-0 blur-2xl opacity-20 rounded-xl"
-                  style={{ background: selectedVehicle.color }}
-                />
-              </div>
-            </div>
-
-            <p className="text-white/20 text-xs mt-8 tracking-widest uppercase">
-              {selectedVehicle.category} Collection
-            </p>
-          </motion.div>
-        </motion.div>
       </div>
     </section>
   );
