@@ -109,7 +109,15 @@ function SportCarCard({
       onMouseLeave={() => setHovered(false)}
     >
       {/* 3D Canvas */}
-      <div className="relative" style={{ height: 260, background: `radial-gradient(ellipse at 50% 60%, ${vehicle.color}08, transparent 70%), #050508` }}>
+      <div className="relative" style={{ height: 260, background: "#050508" }}>
+        {/* Hover glow behind the car */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-500"
+          style={{
+            opacity: hovered ? 1 : 0,
+            background: `radial-gradient(ellipse 70% 55% at 50% 65%, ${vehicle.color}35 0%, ${vehicle.color}10 45%, transparent 75%)`,
+          }}
+        />
         <CanvasErrorBoundary>
           <Canvas
             camera={{ position: [0, 1.4, 4.5], fov: 42 }}
