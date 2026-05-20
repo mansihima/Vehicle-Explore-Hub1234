@@ -7,6 +7,8 @@ import { useState } from "react";
 
 const queryClient = new QueryClient();
 
+const MODEL_URL = import.meta.env.VITE_MAIN_MODEL_URL ?? "/car-model.glb";
+
 function App() {
   const [loaded, setLoaded] = useState(false);
 
@@ -14,7 +16,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <LoadingScreen onComplete={() => setLoaded(true)} />
-        {loaded && <VehicleExperiencePage modelUrl="/car-model.glb" />}
+        {loaded && <VehicleExperiencePage modelUrl={MODEL_URL} />}
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

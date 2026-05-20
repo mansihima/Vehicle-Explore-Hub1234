@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Large 3D model — host on a CDN and set VITE_MAIN_MODEL_URL instead
+artifacts/uber-rentals/public/car-model.glb
