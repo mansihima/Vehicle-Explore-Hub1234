@@ -4,30 +4,36 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 const isVercel = !!process.env.VERCEL;
+const isNetlify = !!process.env.NETLIFY;
+const isCI = isVercel || isNetlify;
 const isReplit = !!process.env.REPL_ID;
 
-const port = isVercel ? 3000 : (() => {
-  const raw = process.env.PORT;
-  if (!raw) throw new Error("PORT environment variable is required but was not provided.");
-  const p = Number(raw);
-  if (Number.isNaN(p) || p <= 0) throw new Error(`Invalid PORT value: "${raw}"`);
-  return p;
-})();
+const port = isCI
+  ? 3000
+  : (() => {
+      const raw = process.env.PORT;
+      if (!raw) throw new Error("PORT environment variable is required but was not provided.");
+      const p = Number(raw);
+      if (Number.isNaN(p) || p <= 0) throw new Error(`Invalid PORT value: "${raw}"`);
+      return p;
+    })();
 
-const basePath = isVercel ? "/" : (() => {
-  const bp = process.env.BASE_PATH;
-  if (!bp) throw new Error("BASE_PATH environment variable is required but was not provided.");
-  return bp;
-})();
+const basePath = isCI
+  ? "/"
+  : (() => {
+      const bp = process.env.BASE_PATH;
+      if (!bp) throw new Error("BASE_PATH environment variable is required but was not provided.");
+      return bp;
+    })();
 
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
-    ...(!isVercel ? [
-      await import("@replit/vite-plugin-runtime-error-modal").then((m) => m.default()),
-    ] : []),
+    ...(!isCI
+      ? [await import("@replit/vite-plugin-runtime-error-modal").then((m) => m.default())]
+      : []),
     ...(process.env.NODE_ENV !== "production" && isReplit
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
@@ -40,7 +46,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
   },

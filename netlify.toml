@@ -1,0 +1,12 @@
+[build]
+  command   = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/uber-rentals run build"
+  publish   = "artifacts/uber-rentals/dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "10"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
