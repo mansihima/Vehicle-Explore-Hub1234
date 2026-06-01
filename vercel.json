@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm --filter @workspace/uber-rentals run build",
-  "outputDirectory": "artifacts/uber-rentals/dist/public",
+  "outputDirectory": "artifacts/uber-rentals/dist",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
   "rewrites": [
