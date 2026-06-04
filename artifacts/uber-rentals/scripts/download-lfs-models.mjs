@@ -7,6 +7,11 @@ const LFS_BATCH_URL = `https://github.com/${REPO}.git/info/lfs/objects/batch`
 
 const MODELS = [
   {
+    path: 'public/car-model.glb',
+    oid: '74313c4410f892b52a6d3b4a5df1e6590f49998a4e6912a6d44beb94c8d7aad3',
+    size: 85272588,
+  },
+  {
     path: 'public/car-sport-1.glb',
     oid: '5a8dce5bc4f3778448f2d79c78ef3b0e27852089ea1950e271cdf970c53f42f0',
     size: 4181724,
