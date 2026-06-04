@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd ../.. && git lfs pull --include='artifacts/uber-rentals/public/car-sport-1.glb,artifacts/uber-rentals/public/car-sport-2.glb,artifacts/uber-rentals/public/car-sport-3.glb' && pnpm install --no-frozen-lockfile",
+  "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/uber-rentals run build",
   "outputDirectory": "dist",
   "framework": null,
