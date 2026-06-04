@@ -19,7 +19,7 @@ run = "pnpm --filter @workspace/uber-rentals run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/uber-rentals", "run", "build" ]
-publicDir = "artifacts/uber-rentals/dist/public"
+publicDir = "artifacts/uber-rentals/dist"
 serve = "static"
 
 [[services.production.rewrites]]
