@@ -7,7 +7,7 @@ import { useState } from "react";
 
 const queryClient = new QueryClient();
 
-const MODEL_URL = import.meta.env.VITE_MAIN_MODEL_URL || undefined;
+const MODEL_URL = import.meta.env.VITE_MAIN_MODEL_URL ?? "/car-model.glb";
 
 function App() {
   const [loaded, setLoaded] = useState(false);
